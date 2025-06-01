@@ -1,0 +1,1 @@
+export default function AdminMembersPage() { return <div>회원 목록</div>; }

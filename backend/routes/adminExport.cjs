@@ -1,43 +1,17 @@
+// ✅ 2. backend/routes/adminExport.cjs
 const express = require('express');
 const router = express.Router();
 const connection = require('../db.cjs');
 const ExcelJS = require('exceljs');
 
-// ✅ 페이징된 회원 목록 조회
-router.get('/', (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 10;
-  const offset = (page - 1) * limit;
-
-  const countQuery = 'SELECT COUNT(*) AS total FROM members';
-  const dataQuery = `
-    SELECT id, username, name, phone, center, recommender, sponsor, bank_name, account_holder, account_number, created_at
-    FROM members
-    ORDER BY created_at DESC
-    LIMIT ? OFFSET ?
-  `;
-
-  connection.query(countQuery, (err, countResult) => {
-    if (err) return res.status(500).json({ error: err });
-
-    const total = countResult[0].total;
-
-    connection.query(dataQuery, [limit, offset], (err2, data) => {
-      if (err2) return res.status(500).json({ error: err2 });
-
-      res.json({ data, total, page, limit });
-    });
-  });
-});
-
-// ✅ 엑셀 다운로드 (GET /api/admin/members/export)
-router.get('/export', async (req, res) => {
+router.get('/', async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 9999;
   const offset = (page - 1) * limit;
 
   const query = `
-    SELECT username, name, phone, center, recommender, sponsor, bank_name, account_holder, account_number, created_at
+    SELECT username, name, phone, center, recommender, sponsor,
+           bank_name, account_holder, account_number, created_at
     FROM members
     ORDER BY created_at DESC
     LIMIT ? OFFSET ?
@@ -45,7 +19,7 @@ router.get('/export', async (req, res) => {
 
   connection.query(query, [limit, offset], async (err, results) => {
     if (err) {
-      console.error('❌ 엑셀 다운로드 쿼리 실패:', err);
+      console.error('❌ 엑셀 쿼리 실패:', err);
       return res.status(500).json({ message: '엑셀 다운로드 실패' });
     }
 
@@ -66,7 +40,9 @@ router.get('/export', async (req, res) => {
         { header: '등록일', key: 'created_at', width: 20 },
       ];
 
-      results.forEach(row => sheet.addRow(row));
+      results.forEach((row) => {
+        sheet.addRow(row);
+      });
 
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.setHeader('Content-Disposition', `attachment; filename=members_${Date.now()}.xlsx`);

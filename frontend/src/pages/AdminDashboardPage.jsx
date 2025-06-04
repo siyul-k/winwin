@@ -1,79 +1,44 @@
-// ✅ 3. frontend/src/pages/AdminDashboardPage.jsx
-import React, { useState, useEffect } from 'react';
-import Header from '../components/Header';
-import SummaryCards from '../components/SummaryCards';
-import MemberFilterForm from '../components/MemberFilterForm';
-import MemberTable from '../components/MemberTable';
+// ✅ 파일 위치: src/pages/AdminDashboardPage.jsx
+import React from 'react';
 
-export default function AdminDashboardPage() {
-  const [members, setMembers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [filters, setFilters] = useState({});
-  const limit = 10;
-
-  const fetchMembers = async (page = 1, appliedFilters = filters) => {
-    setLoading(true);
-    const params = new URLSearchParams({ ...appliedFilters, page, limit }).toString();
-    try {
-      const res = await fetch(`/api/admin/members?${params}`);
-      const result = await res.json();
-      setMembers(result.data);
-      setTotal(result.total);
-      setPage(result.page);
-    } catch (err) {
-      console.error('회원 목록 조회 에러:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchMembers(1);
-  }, []);
-
-  const handleSearch = (newFilters, isExport = false) => {
-    setFilters(newFilters);
-    if (isExport) {
-      const params = new URLSearchParams({ ...newFilters, page: 1, limit: 9999 }).toString();
-      const url = `/api/admin/members/export?${params}`;
-      console.log('📦 엑셀 다운로드 URL:', url);
-      window.open(url, '_blank');
-    } else {
-      fetchMembers(1, newFilters);
-    }
-  };
-
-  const totalPages = Math.ceil(total / limit);
-
+const AdminDashboardPage = () => {
   return (
     <div>
-      <Header />
-      <SummaryCards />
-      <MemberFilterForm onSearch={handleSearch} />
+      <h2 className="text-xl font-bold mb-4">관리자 대시보드</h2>
 
-      {loading ? <p>로딩 중...</p> : <MemberTable data={members} />}
+      {/* 통계 카드 */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white p-4 rounded shadow">전체회원<br/><strong>300</strong></div>
+        <div className="bg-white p-4 rounded shadow">Today<br/><strong>0</strong></div>
+        <div className="bg-white p-4 rounded shadow">BlackList<br/><strong>10</strong></div>
+        <div className="bg-white p-4 rounded shadow">Center<br/><strong>2</strong></div>
+      </div>
 
-      <div style={{ marginTop: '20px', textAlign: 'center' }}>
-        {Array.from({ length: totalPages }, (_, i) => (
-          <button
-            key={i}
-            onClick={() => fetchMembers(i + 1)}
-            style={{
-              margin: '0 4px',
-              padding: '6px 10px',
-              backgroundColor: page === i + 1 ? '#4f46e5' : '#eee',
-              color: page === i + 1 ? '#fff' : '#000',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
-          >
-            {i + 1}
-          </button>
-        ))}
+      {/* 회원 목록 테이블 */}
+      <div className="overflow-x-auto">
+        <table className="min-w-[900px] bg-white border rounded shadow">
+          <thead className="bg-gray-100 text-sm">
+            <tr>
+              <th className="px-4 py-2 text-left">아이디</th>
+              <th className="px-4 py-2 text-left">이름</th>
+              <th className="px-4 py-2 text-left">핸드폰</th>
+              <th className="px-4 py-2 text-left">센터</th>
+              <th className="px-4 py-2 text-left">추천인</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td className="px-4 py-2">ktc004</td>
+              <td className="px-4 py-2">김도경</td>
+              <td className="px-4 py-2">01000000000</td>
+              <td className="px-4 py-2">김포</td>
+              <td className="px-4 py-2">추천자1</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   );
-}
+};
+
+export default AdminDashboardPage;

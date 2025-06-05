@@ -1,65 +1,50 @@
+// ✅ 파일 위치: backend/routes/adminWithdraws.cjs
+
 const express = require('express');
 const router = express.Router();
 const connection = require('../db.cjs');
 
-// 1. 출금신청 목록 조회 (회원 이름 포함)
-router.get('/', (req, res) => {
+// ✅ 출금 통계 API (필터 적용)
+router.get('/stats', (req, res) => {
+  const { username, status, startDate, endDate } = req.query;
+
+  let conditions = [];
+  let values = [];
+
+  if (username) {
+    conditions.push("w.username LIKE ?");
+    values.push(`%${username}%`);
+  }
+
+  if (status) {
+    conditions.push("w.status = ?");
+    values.push(status);
+  }
+
+  if (startDate && endDate) {
+    conditions.push("DATE(w.created_at) BETWEEN ? AND ?");
+    values.push(startDate, endDate);
+  }
+
+  const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
   const sql = `
-    SELECT w.id, w.username, m.name, w.amount, w.fee, w.actual_amount, w.status, w.created_at
+    SELECT
+      IFNULL(SUM(CASE WHEN w.status = 'complete' THEN w.actual_amount ELSE 0 END), 0) AS total_withdraw,
+      IFNULL(SUM(CASE WHEN w.status = 'complete' AND DATE(w.created_at) = CURDATE() THEN w.actual_amount ELSE 0 END), 0) AS today_withdraw,
+      IFNULL(SUM(CASE WHEN w.status = 'complete' AND YEAR(w.created_at) = YEAR(CURDATE()) AND MONTH(w.created_at) = MONTH(CURDATE()) THEN w.actual_amount ELSE 0 END), 0) AS month_withdraw,
+      IFNULL(SUM(CASE WHEN w.status = 'complete' AND YEAR(w.created_at) = YEAR(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) AND MONTH(w.created_at) = MONTH(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) THEN w.actual_amount ELSE 0 END), 0) AS prev_month_withdraw
     FROM withdraw_requests w
     LEFT JOIN members m ON w.username = m.username
-    ORDER BY w.created_at DESC
+    ${whereClause}
   `;
-  connection.query(sql, (err, results) => {
+
+  connection.query(sql, values, (err, results) => {
     if (err) {
-      console.error('❌ 출금신청 목록 조회 실패:', err);
-      return res.status(500).json({ message: '출금신청 조회 실패' });
+      console.error('❌ 출금 통계 조회 실패:', err);
+      return res.status(500).json({ message: '출금 통계 조회 실패' });
     }
-    res.json(results);
-  });
-});
-
-// 2. 출금 완료 처리
-router.post('/complete', (req, res) => {
-  const { ids } = req.body; // 예: [1, 2, 3]
-  if (!Array.isArray(ids) || ids.length === 0) {
-    return res.status(400).json({ message: '잘못된 요청' });
-  }
-
-  const placeholders = ids.map(() => '?').join(',');
-  const sql = `
-    UPDATE withdraw_requests
-    SET status = 'complete', completed_at = NOW()
-    WHERE id IN (${placeholders}) AND status = 'pending'
-  `;
-  connection.query(sql, ids, (err, result) => {
-    if (err) {
-      console.error('❌ 출금 완료 처리 실패:', err);
-      return res.status(500).json({ message: '완료 처리 실패' });
-    }
-    res.json({ success: true, updated: result.affectedRows });
-  });
-});
-
-// 3. 출금 취소 처리
-router.post('/cancel', (req, res) => {
-  const { ids } = req.body;
-  if (!Array.isArray(ids) || ids.length === 0) {
-    return res.status(400).json({ message: '잘못된 요청' });
-  }
-
-  const placeholders = ids.map(() => '?').join(',');
-  const sql = `
-    UPDATE withdraw_requests
-    SET status = 'cancel', completed_at = NOW()
-    WHERE id IN (${placeholders}) AND status = 'pending'
-  `;
-  connection.query(sql, ids, (err, result) => {
-    if (err) {
-      console.error('❌ 출금 취소 실패:', err);
-      return res.status(500).json({ message: '취소 실패' });
-    }
-    res.json({ success: true, cancelled: result.affectedRows });
+    res.json(results[0]);
   });
 });
 

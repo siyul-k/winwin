@@ -1,83 +1,73 @@
 const express = require('express');
 const router = express.Router();
 const connection = require('../db.cjs');
-const ExcelJS = require('exceljs');
+const bcrypt = require('bcrypt');
 
-// ✅ 페이징된 회원 목록 조회
-router.get('/', (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 10;
-  const offset = (page - 1) * limit;
+// ✅ 회원 정보 수정
+router.put('/:id', async (req, res) => {
+  const { name, phone, center, recommender, bank_name, account_holder, account_number, password } = req.body;
+  const { id } = req.params;
 
-  const countQuery = 'SELECT COUNT(*) AS total FROM members';
-  const dataQuery = `
-    SELECT id, username, name, phone, center, recommender, sponsor, bank_name, account_holder, account_number, created_at
-    FROM members
-    ORDER BY created_at DESC
-    LIMIT ? OFFSET ?
-  `;
+  try {
+    // 업데이트할 필드만 추림
+    const fields = [];
+    const values = [];
 
-  connection.query(countQuery, (err, countResult) => {
-    if (err) return res.status(500).json({ error: err });
+    if (name) {
+      fields.push('name = ?');
+      values.push(name);
+    }
+    if (phone) {
+      fields.push('phone = ?');
+      values.push(phone);
+    }
+    if (center) {
+      fields.push('center = ?');
+      values.push(center);
+    }
+    if (recommender) {
+      fields.push('recommender = ?');
+      values.push(recommender);
+    }
+    if (bank_name) {
+      fields.push('bank_name = ?');
+      values.push(bank_name);
+    }
+    if (account_holder) {
+      fields.push('account_holder = ?');
+      values.push(account_holder);
+    }
+    if (account_number) {
+      fields.push('account_number = ?');
+      values.push(account_number);
+    }
 
-    const total = countResult[0].total;
+    // 비밀번호가 있을 경우 bcrypt 암호화 후 업데이트
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      fields.push('password = ?');
+      values.push(hashedPassword);
+    }
 
-    connection.query(dataQuery, [limit, offset], (err2, data) => {
-      if (err2) return res.status(500).json({ error: err2 });
+    // 업데이트할 필드가 없을 경우
+    if (fields.length === 0) {
+      return res.status(400).json({ error: '수정할 항목이 없습니다.' });
+    }
 
-      res.json({ data, total, page, limit });
+    const sql = `UPDATE members SET ${fields.join(', ')} WHERE id = ?`;
+    values.push(id);
+
+    connection.query(sql, values, (err) => {
+      if (err) {
+        console.error('❌ 회원 수정 실패:', err);
+        return res.status(500).json({ error: '회원 수정 실패' });
+      }
+      res.json({ success: true });
     });
-  });
-});
-
-// ✅ 엑셀 다운로드 (GET /api/admin/members/export)
-router.get('/export', async (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 9999;
-  const offset = (page - 1) * limit;
-
-  const query = `
-    SELECT username, name, phone, center, recommender, sponsor, bank_name, account_holder, account_number, created_at
-    FROM members
-    ORDER BY created_at DESC
-    LIMIT ? OFFSET ?
-  `;
-
-  connection.query(query, [limit, offset], async (err, results) => {
-    if (err) {
-      console.error('❌ 엑셀 다운로드 쿼리 실패:', err);
-      return res.status(500).json({ message: '엑셀 다운로드 실패' });
-    }
-
-    try {
-      const workbook = new ExcelJS.Workbook();
-      const sheet = workbook.addWorksheet('회원목록');
-
-      sheet.columns = [
-        { header: '아이디', key: 'username', width: 15 },
-        { header: '이름', key: 'name', width: 15 },
-        { header: '핸드폰', key: 'phone', width: 15 },
-        { header: '센터', key: 'center', width: 15 },
-        { header: '추천인', key: 'recommender', width: 15 },
-        { header: '후원인', key: 'sponsor', width: 15 },
-        { header: '은행이름', key: 'bank_name', width: 15 },
-        { header: '예금주', key: 'account_holder', width: 15 },
-        { header: '계좌번호', key: 'account_number', width: 20 },
-        { header: '등록일', key: 'created_at', width: 20 },
-      ];
-
-      results.forEach(row => sheet.addRow(row));
-
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', `attachment; filename=members_${Date.now()}.xlsx`);
-
-      await workbook.xlsx.write(res);
-      res.end();
-    } catch (err) {
-      console.error('❌ 엑셀 생성 실패:', err);
-      res.status(500).json({ message: '엑셀 생성 오류' });
-    }
-  });
+  } catch (err) {
+    console.error('❌ 서버 오류:', err);
+    res.status(500).json({ error: '서버 오류' });
+  }
 });
 
 module.exports = router;

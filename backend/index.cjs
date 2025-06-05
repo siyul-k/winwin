@@ -11,8 +11,10 @@ app.use(cors());
 app.use(express.json());
 
 // ✅ 라우터 등록 (순서 중요)
+app.use('/api/admin/rewards', require('./routes/adminRewards.cjs'));
 app.use('/api/admin/notices', require('./routes/adminNotices.cjs'));
 app.use('/api/admin/members/export', require('./routes/adminExport.cjs'));
+app.use('/api/admin/members/stats', require('./routes/adminMemberStats.cjs'));
 app.use('/api/admin/members', require('./routes/adminMembers.cjs'));
 app.use('/api/withdraw', require('./routes/withdraw.cjs'));
 app.use('/api/admin/withdraws', require('./routes/adminWithdraws.cjs'));

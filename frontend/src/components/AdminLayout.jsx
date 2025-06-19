@@ -25,6 +25,11 @@ export default function AdminLayout() {
   else if (pathname.startsWith('/admin/deposit')) StatsComponent = DepositStats;
   else if (pathname.startsWith('/admin/withdraws')) StatsComponent = WithdrawStats;
 
+  const navLinkClass = (path) =>
+    `px-4 py-2 text-sm font-medium rounded hover:text-yellow-300 whitespace-nowrap ${
+      pathname.startsWith(path) ? 'text-yellow-300' : 'text-white'
+    }`;
+
   return (
     <div className="flex flex-col min-h-screen">
       {/* 상단바 */}

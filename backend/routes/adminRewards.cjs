@@ -45,7 +45,6 @@ router.get('/', (req, res) => {
   connection.query(countSql, params, (err, countResult) => {
     if (err) return res.status(500).json({ error: '카운트 조회 실패' });
     const total = countResult[0].total;
-
     connection.query(dataSql, [...params, limit, offset], (err2, rows) => {
       if (err2) return res.status(500).json({ error: '목록 조회 실패' });
       res.json({ data: rows, total });

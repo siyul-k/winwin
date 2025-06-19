@@ -1,6 +1,7 @@
-// src/pages/LoginPage.jsx
+// ✅ 파일 경로: src/pages/LoginPage.jsx
+
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 
 export default function LoginPage() {
@@ -18,77 +19,95 @@ export default function LoginPage() {
         username,
         password,
       });
+
       if (res.data.success) {
         localStorage.setItem("user", JSON.stringify(res.data.user));
-        // BrowserRouter인 경우:
+        localStorage.setItem("username", res.data.user.username); // ✅ 입금신청용 username 따로 저장
         navigate("/dashboard");
       } else {
         setError(res.data.message || "로그인 실패");
       }
     } catch (err) {
-      console.error(err);
-      setError("서버 오류");
+      console.error("❌ 로그인 오류:", err);
+      setError("ID 또는 비밀번호를 확인하세요.");
     }
   };
 
   return (
-    <div style={{
-      maxWidth: "400px",
-      margin: "80px auto",
-      padding: "2rem",
-      backgroundColor: "#f9fafb",
-      border: "2px solid #ccc",
-      borderRadius: "12px",
-      textAlign: "center",
-    }}>
-      <h1 style={{ fontSize: "24px", marginBottom: "1.5rem", color: "#111827" }}>
-        👤 회원 로그인 페이지
-      </h1>
-      <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-        <input
-          type="text"
-          placeholder="아이디"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          style={{
-            padding: "0.75rem",
-            fontSize: "16px",
-            border: "1px solid #ccc",
-            borderRadius: "6px",
-          }}
-        />
-        <input
-          type="password"
-          placeholder="비밀번호"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={{
-            padding: "0.75rem",
-            fontSize: "16px",
-            border: "1px solid #ccc",
-            borderRadius: "6px",
-          }}
-        />
-        <button
-          type="submit"
-          style={{
-            padding: "0.75rem",
-            backgroundColor: "#4f46e5",
-            color: "white",
-            fontWeight: "bold",
-            border: "none",
-            borderRadius: "6px",
-            cursor: "pointer",
-          }}
-        >
-          로그인
-        </button>
-        {error && (
-          <p style={{ marginTop: "0.5rem", color: "red", fontWeight: "bold" }}>
-            {error}
-          </p>
-        )}
-      </form>
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "#f3f4f6",
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "400px",
+          padding: "2rem",
+          backgroundColor: "#ffffff",
+          borderRadius: "12px",
+          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
+          textAlign: "center",
+        }}
+      >
+        <h1 style={{ fontSize: "20px", marginBottom: "1.5rem", fontWeight: "bold" }}>로그인</h1>
+
+        <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <input
+            type="text"
+            placeholder="아이디"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            style={{
+              padding: "0.75rem",
+              fontSize: "16px",
+              border: "1px solid #d1d5db",
+              borderRadius: "6px",
+            }}
+          />
+          <input
+            type="password"
+            placeholder="비밀번호"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            style={{
+              padding: "0.75rem",
+              fontSize: "16px",
+              border: "1px solid #d1d5db",
+              borderRadius: "6px",
+            }}
+          />
+          <button
+            type="submit"
+            style={{
+              padding: "0.75rem",
+              backgroundColor: "#3b82f6",
+              color: "white",
+              fontWeight: "bold",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+            }}
+          >
+            로그인
+          </button>
+          {error && <p style={{ color: "red", fontWeight: "bold" }}>{error}</p>}
+        </form>
+
+        <div style={{ marginTop: "1.5rem", fontSize: "14px", color: "#6b7280" }}>
+          <Link to="/signup" style={{ marginRight: "1rem", color: "#374151", textDecoration: "underline" }}>
+            회원가입
+          </Link>
+          <span style={{ color: "#9ca3af" }}>|</span>
+          <a href="#" style={{ marginLeft: "1rem", color: "#374151", textDecoration: "underline" }}>
+            비밀번호 찾기
+          </a>
+        </div>
+      </div>
     </div>
   );
 }

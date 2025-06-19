@@ -1,10 +1,9 @@
-// ✅ 파일 위치: backend/routes/points.cjs
 const express = require('express');
 const router = express.Router();
 const connection = require('../db.cjs');
 const ExcelJS = require('exceljs');
 
-// 포인트 합계 조회
+// ✅ 포인트 합계 조회
 router.get('/total/:member_id', (req, res) => {
   const member_id = req.params.member_id;
   const sql = `SELECT IFNULL(SUM(point), 0) AS total_points FROM member_points WHERE member_id = ?`;
@@ -14,20 +13,50 @@ router.get('/total/:member_id', (req, res) => {
   });
 });
 
-// 포인트 보정 추가
+// ✅ 포인트 보정 추가 + 수당 로그 기록
 router.post('/adjust', (req, res) => {
   const { member_id, point, type, description } = req.body;
-  const sql = `
+
+  const insertPoint = `
     INSERT INTO member_points (member_id, point, type, description)
     VALUES (?, ?, ?, ?)
   `;
-  connection.query(sql, [member_id, point, type, description], (err, results) => {
+
+  connection.query(insertPoint, [member_id, point, type, description], async (err, results) => {
     if (err) return res.status(500).json({ error: 'DB error', details: err });
-    res.json({ success: true, inserted_id: results.insertId });
+
+    try {
+      // 보정 수당 로그도 남기기
+      const [userRows] = await connection.promise().query(
+        `SELECT username FROM members WHERE id = ?`,
+        [member_id]
+      );
+
+      if (userRows.length > 0) {
+        const username = userRows[0].username;
+
+        const insertLog = `
+          INSERT INTO rewards_log (user_id, type, source, amount, memo, created_at)
+          VALUES (?, 'adjust', ?, ?, ?, NOW())
+        `;
+
+        await connection.promise().query(insertLog, [
+          username,
+          results.insertId, // source
+          point,
+          description || '포인트 보정'
+        ]);
+      }
+
+      res.json({ success: true, inserted_id: results.insertId });
+    } catch (logErr) {
+      console.error('❌ 보정 수당 로그 기록 실패:', logErr);
+      res.status(500).json({ error: '보정은 완료, 로그 기록 실패' });
+    }
   });
 });
 
-// 포인트 이력 조회
+// ✅ 포인트 이력 조회
 router.get('/history/:member_id', (req, res) => {
   const member_id = req.params.member_id;
   const sql = `
@@ -42,9 +71,10 @@ router.get('/history/:member_id', (req, res) => {
   });
 });
 
-// 포인트 보정 삭제
+// ✅ 포인트 보정 삭제
 router.delete('/delete/:id', (req, res) => {
   const pointId = req.params.id;
+
   const sql = 'DELETE FROM member_points WHERE id = ?';
   connection.query(sql, [pointId], (err, result) => {
     if (err) return res.status(500).json({ error: '삭제 실패', details: err });
@@ -52,7 +82,7 @@ router.delete('/delete/:id', (req, res) => {
   });
 });
 
-// ✅ NEW: 포인트 이력 엑셀 다운로드
+// ✅ 포인트 엑셀 다운로드
 router.get('/export/:member_id', async (req, res) => {
   const member_id = req.params.member_id;
   const sql = `

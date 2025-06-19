@@ -1,3 +1,5 @@
+// ✅ 파일 경로: backend/routes/login.cjs
+
 const express = require('express');
 const router = express.Router();
 const connection = require('../db.cjs');
@@ -10,12 +12,12 @@ router.post('/', (req, res) => {
   connection.query(sql, [username], async (err, results) => {
     if (err) {
       console.error('❌ DB 오류:', err);
-      return res.status(500).json({ message: 'DB 오류' });
+      return res.status(500).json({ success: false, message: 'DB 오류' });
     }
 
     if (results.length === 0) {
       console.warn('⚠️ 아이디 없음:', username);
-      return res.status(401).json({ message: '아이디 없음' });
+      return res.status(401).json({ success: false, message: '아이디 없음' });
     }
 
     const user = results[0];
@@ -29,19 +31,24 @@ router.post('/', (req, res) => {
       console.log('✅ 비교 결과:', isMatch);
 
       if (!isMatch) {
-        return res.status(401).json({ message: '비밀번호 불일치' });
+        return res.status(401).json({ success: false, message: '비밀번호 불일치' });
       }
 
       // 로그인 성공
       res.json({
-        id: user.id,
-        username: user.username,
-        name: user.name
+        success: true,
+        user: {
+          id: user.id,
+          username: user.username,
+          name: user.name,
+          phone: user.phone,
+          center: user.center,
+          is_admin: user.is_admin,
+        },
       });
-
     } catch (compareErr) {
       console.error('❌ bcrypt 비교 중 오류:', compareErr);
-      res.status(500).json({ message: '비밀번호 검증 실패' });
+      res.status(500).json({ success: false, message: '비밀번호 검증 실패' });
     }
   });
 });

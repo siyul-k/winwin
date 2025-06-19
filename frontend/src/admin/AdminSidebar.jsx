@@ -18,6 +18,7 @@ export default function AdminSidebar({ isOpen, closeSidebar }) {
         <li><Link to="/admin/sales" onClick={closeSidebar}>📦 판매관리</Link></li>
         <li><Link to="/admin/deposit" onClick={closeSidebar}>💰 입금관리</Link></li>
         <li><Link to="/admin/withdraw" onClick={closeSidebar}>🏧 출금관리</Link></li>
+        <li><Link to="/admin/centers" onClick={closeSidebar}>🏢 센터관리</Link></li> {/* ✅ 추가된 항목 */}
         <li><Link to="/admin/settings" onClick={closeSidebar}>⚙️ 환경설정</Link></li>
         <li><Link to="/admin/bonus-log" onClick={closeSidebar}>📊 수당관리</Link></li>
       </ul>

@@ -177,6 +177,7 @@ router.get('/export', (req, res) => {
       w.memo, w.created_at
     FROM withdraw_requests w
     LEFT JOIN members m ON w.username = m.username
+    ${whereClause}
     ORDER BY w.created_at DESC
   `;
 

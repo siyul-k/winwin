@@ -11,6 +11,9 @@ export default function AdminDepositPage() {
   const [enabled, setEnabled] = useState({ username: false, status: false, date: false });
   const [selected, setSelected] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({ username: '', name: '', date: '', status: '' });
+  const [enabled, setEnabled] = useState({ username: false, name: false, date: false, status: false });
+  const [stats, setStats] = useState({ total: 0, today: 0, month: 0, prevMonth: 0 });
 
   const mapStatus = (s) => {
   if (s === '요청') return 'Request';
